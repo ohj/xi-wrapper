@@ -1,0 +1,18 @@
+#%Module1.0
+# Xilinx ISE environment wrapper
+# written by Ole Henrik Jahren <olehenja@alumni.ntnu.no>
+
+proc ModulesHelp {} {
+	puts stderr "\tXilinx ISE wrapper using usb-driver\n"
+}
+
+module-whatis	"Xilinx ISE wrapper using usb-driver"
+conflict	xi-wrapper
+
+append-path	PATH "@bindir@"
+# Do not use libusb
+setenv		XIL_IMPACT_USE_LIBUSB "0"
+# Hack needed on systems where XIL_IMPACT_USE_LIBUSB=1 refuses to work.
+append-path	XI_WRAPPER_LD_PRELOAD "@libdir@/libusb-driver.so"
+# Where to locate licence files, see Xilinx docs
+setenv		XILINXD_LICENSE_FILE "@datadir@/licences"

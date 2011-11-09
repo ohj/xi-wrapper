@@ -1,0 +1,16 @@
+#%Module1.0
+# Xilinx ISE environment wrapper
+# written by Ole Henrik Jahren <olehenja@alumni.ntnu.no>
+
+proc ModulesHelp {} {
+	puts stderr "\tXilinx ISE wrapper using libusb\n"
+}
+
+module-whatis	"Xilinx ISE wrapper using libusb"
+conflict	xi-wrapper
+
+append-path	PATH "@bindir@"
+# Use libusb
+setenv		XIL_IMPACT_USE_LIBUSB "1"
+# Where to locate licence files, see Xilinx docs
+setenv		XILINXD_LICENSE_FILE "@datadir@/licences"

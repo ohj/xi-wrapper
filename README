@@ -1,0 +1,102 @@
+XI wrapper
+==================
+
+A wrapper script for Xilinx ISE[1].
+
+
+Why
+---
+
+The reason for the scripts existence is twofold. One reason is to avoid
+having all the crap usually found in Xilinx' bin directory in $PATH,
+and $LD_RELOAD/$LD_LIBRARY_PATH filled with incompatible libs. The second
+reason is to make it easier having multiple parallel installs of Xilinx
+ISE and switch between them.
+
+
+Installation
+------------
+
+The Makefile supports the usual GNU standard variables. It must
+be installed in the same base directory as Xilinx ISE, since it
+expects to find the different versions of ISE installed under
+$prefix/$XILINX_VERSION. If you have e.g. ISE 12.4 installed in
+/opt/xilinx/12.4 . To install the wrapper scripts, you would do:
+
+$ make prefix=/opt/xilinx sysconfdir=/etc
+
+# make prefix=/opt/xilinx sysconfdir=/etc install
+
+This will also create symbolic links for the really basic tools used
+in a FPGA design flow. You probably need more symbolic links for you
+design flow.  Perhaps symbolic links for more commands should be installed
+by default?
+
+Adding support for more commands found in the Xilinx ISE installation
+is easy.  Simply create a symbolic link, named the same as the command
+found in Xilinx' bin directory, to this wrapper script. The wrapper can
+either be used standalone or in conjunction with Environment Modules.
+
+
+Usage
+-----
+
+The wrapper works by having a symbolic link named the same as whatever
+program you want to invoke, linked to the xi-wrapper script. The script
+then sets up the environment as expected by the program, and invokes it.
+
+E.g. to use the synthesis tool, xst, with this script. First create a
+symbolic link named xst to xi-wrapper.
+
+$ ln -s $bindir/xi-wrapper xst
+
+You can now easily change both which version of xst is invoked, if you
+have multiple installs in parallel, or which architecture build of the
+tool is used (64- or 32-bit).
+
+Invoke a specific version:
+
+$ XI_WRAPPER_VERSION="12.1" xst
+
+Use 32-bit synthesis tool on 64-bit machine:
+
+$ XI_WRAPPER_ARCH="i686" xst
+
+
+Hooks
+-----
+
+In certain versions, some of the tools behave erratically. E.g. in version
+13.2 trce tends to segfault after finishing STA. The report is fine,
+since STA was done before segfault, but make fails since exit code is
+139. To work around this, a system for inserting pre- and post-execution
+hooks is implemented. E.g. to work around the bug mentioned, create
+$datadir/xi-wrapper/hooks.d/trce-13.2-post-exec.sh containing
+
+	if [ $ret -eq 139 ] ; then
+		ret=0
+	fi
+
+The naming rules for the hooks are $tool-$version-pre-exec.sh for
+pre-execution hooks, and $tool-$version-post-exec.sh for post-execution
+hooks.
+
+
+Environment Modules
+-------------------
+
+Included is also two modulefiles intended to be used with the Environment
+Modules package[2]. The libusb modulefile works on most setups using
+newer versions Xilinx ISE over USB. When the libusb approach does not
+work or when using parallel cable, the usb-driver modulefile together
+with usb-driver[3] can be used instead.
+
+E.g. if you have /etc/modulefiles setup as a modulefile directory. You
+can create the folder /etc/modulefiles/xi-wrapper and put usb-driver
+and libusb modulefiles in there. This lets you access the two setups as
+different versions of the xi-wrapper module.
+
+
+[1] http://www.xilinx.com/products/design-tools/
+[2] http://modules.sourceforge.net/
+[3] http://rmdir.de/~michael/xilinx/

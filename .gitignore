@@ -1,0 +1,5 @@
+*.swp
+xi-config
+xi-env.sh
+xi-wrapper
+*.modulefile

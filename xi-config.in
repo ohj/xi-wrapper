@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# Tool for getting paths and other config stuff from a Xilinx ISE install.
+# Copyright (C) 2010-2012 Ole Henrik Jahren <olehenja@alumni.ntnu.no>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+# Reminder where to look for programs if any are missing:
+# $XI_WRAPPER_PREFIX/$XI_WRAPPER_VERSION/ISE_DS/common/bin/lin64
+# $XI_WRAPPER_PREFIX/$XI_WRAPPER_VERSION/ISE_DS/PlanAhead/bin
+# $XI_WRAPPER_PREFIX/$XI_WRAPPER_VERSION/ISE_DS/ISE/bin/lin64
+# $XI_WRAPPER_PREFIX/$XI_WRAPPER_VERSION/ISE_DS/ISE/sysgen/util
+# $XI_WRAPPER_PREFIX/$XI_WRAPPER_VERSION/ISE_DS/EDK/bin/lin64
+
+prog="`basename "$0"`"
+
+die()
+{
+	echo "$@" >&2
+	exit 1
+}
+
+usage()
+{
+	cat >&2 << EOF
+usage: $prog <language> <libraries...>
+
+Legal languages are:
+  verilog
+
+Legal libraries are:
+  XilinxCoreLib
+  simprims
+  unimacro
+  unisims
+EOF
+}
+
+if [ -n "$XI_WRAPPER_PREFIX" ] ; then
+	prefix="$XI_WRAPPER_PREFIX"
+else
+	# Change this to where you installed ISE. E.g.
+	# prefix="/opt/xilinx"
+	prefix="@prefix@"
+fi
+
+if [ -n "$XI_WRAPPER_VERSION" ] ; then
+	version="$XI_WRAPPER_VERSION"
+else
+	# version of ISE installed. E.g. 9.1i
+	version="@xi_wrapper_version@"
+fi
+
+if [ ! -d "$prefix/$version" ] ; then
+	die "$prog: error: '$prefix/$version' does not seem to be a valid version"
+fi
+
+if [ "$#" -lt 1 ] ; then
+	usage
+	echo "" >&2
+	die "$prog: error: you must atleast specify a language"
+fi
+
+language="$1"
+shift
+
+output=""
+while [ $# -gt 0 ] ; do
+	arg="$1"
+	shift
+	case "$arg" in
+	XilinxCoreLib)
+		;;
+	unisims)
+		;;
+	unimacro)
+		;;
+	simprims)
+		;;
+	*)
+		die "$prog: error: unknown library '$arg'"
+		;;
+	esac
+	lib="$prefix/$version/ISE_DS/ISE/$language/src/$arg"
+	if [ -d "$lib" ] ; then
+		if [ -n "$output" ] ; then
+			output="$output -y$lib"
+		else
+			output="-y$lib"
+		fi
+	fi
+done
+
+if [ -n "$output" ] ; then
+	echo "$output"
+fi

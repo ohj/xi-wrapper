@@ -1,0 +1,32 @@
+#!/bin/sh
+# Xilinx ISE wrapper environment
+# written by Ole Henrik Jahren <olehenja@alumni.ntnu.no>
+
+#if [ -n "$PATH" ] ; then
+#	PATH="$PATH:@bindir@"
+#else
+#	PATH="@bindir@"
+#fi
+#export PATH
+
+# 1 means use libusb instead of windrv with impact, default on newer versions
+# 0 means do not use libusb
+#export XIL_IMPACT_USE_LIBUSB=1
+
+# Hack needed on systems where XIL_IMPACT_USE_LIBUSB=1 refuses to work.
+# this must be used with XIL_IMPACT_USE_LIBUSB=0
+#if [ -n "$XI_WRAPPER LD_PRELOAD" ] ; then
+#	XI_WRAPPER_LD_PRELOAD="$XI_WRAPPER_LD_PRELOAD:@libdir@/libusb-driver.so"
+#else
+#	XI_WRAPPER_LD_PRELOAD="@libdir@/libusb-driver.so"
+#fi
+#export XI_WRAPPER_LD_PRELOAD
+
+# Where to locate licence files, see Xilinx docs
+#export XILINXD_LICENSE_FILE="@datadir@/licences"
+
+# Use 32 bit install, even on 64 bit systems
+#XI_WRAPPER_ARCH=i686
+
+# Use version as default
+#export XI_WRAPPER_VERSION="@xi_wrapper_version@"

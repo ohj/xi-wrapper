@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+# Xilinx ISE command line tools wrapper script
+# Copyright (C) 2010-2012 Ole Henrik Jahren <olehenja@alumni.ntnu.no>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+# Reminder where to look for programs if any are missing:
+# $XI_WRAPPER_PREFIX/$XI_WRAPPER_VERSION/ISE_DS/common/bin/lin64
+# $XI_WRAPPER_PREFIX/$XI_WRAPPER_VERSION/ISE_DS/PlanAhead/bin
+# $XI_WRAPPER_PREFIX/$XI_WRAPPER_VERSION/ISE_DS/ISE/bin/lin64
+# $XI_WRAPPER_PREFIX/$XI_WRAPPER_VERSION/ISE_DS/ISE/sysgen/util
+# $XI_WRAPPER_PREFIX/$XI_WRAPPER_VERSION/ISE_DS/EDK/bin/lin64
+
+die()
+{
+	echo "$@" >&2
+	exit 1
+}
+
+should_filter()
+{
+	local ret=1
+	case "$prog" in
+	map)
+		ret=0 ;;
+	netgen)
+		ret=0 ;;
+	ngdbuild)
+		ret=0 ;;
+	par)
+		ret=0 ;;
+	trce)
+		ret=0 ;;
+	xst)
+		ret=0 ;;
+	esac
+
+	return "$ret"
+}
+
+if [ -n "$XI_WRAPPER_RECURSIVE" ] ; then
+	die "$0: error: recursive loop detected"
+fi
+
+if [ -n "$XI_WRAPPER_PREFIX" ] ; then
+	prefix="$XI_WRAPPER_PREFIX"
+else
+	# Change this to where you installed ISE. E.g.
+	# prefix="/opt/xilinx"
+	prefix="@prefix@"
+fi
+
+if [ -n "$XI_WRAPPER_VERSION" ] ; then
+	version="$XI_WRAPPER_VERSION"
+else
+	# version of ISE installed. E.g. 9.1i
+	version="@xi_wrapper_version@"
+fi
+
+if [ ! -d "$prefix/$version" ] ; then
+	die "$0: error: '$prefix/$version' does not seem to be a valid version"
+fi
+
+if [ -n "$XI_WRAPPER_ARCH" ] ; then
+	arch="$XI_WRAPPER_ARCH"
+else
+	arch="`uname -m`"
+fi
+
+if [ "$arch" = "x86_64" ] ; then
+	bits="64"
+elif echo "$arch" | grep -q '^i[3456]86$' ; then
+	bits="32"
+else
+	die "$0: error: unknown architecture '$arch' not supported"
+fi
+
+if [ -z "$LD_LIBRARY_PATH" ] ; then
+	LD_LIBRARY_PATH="$prefix/lib$bits"
+else
+	LD_LIBRARY_PATH="$prefix/lib$bits:$LD_LIBRARY_PATH"
+fi
+export LD_LIBRARY_PATH
+
+if [ -n "$XI_WRAPPER_LD_PRELOAD" ] ; then
+	if [ -z "$LD_PRELOAD" ] ; then
+		LD_PRELOAD="$XI_WRAPPER_LD_PRELOAD"
+	else
+		LD_PRELOAD="$LD_PRELOAD:$XI_WRAPPER_LD_PRELOAD"
+	fi
+	export LD_PRELOAD
+fi
+
+dir="$prefix/$version/ISE_DS"
+script="$dir/settings$bits.sh"
+if [ "$XI_WRAPPER_VERBOSE" == 1 ] ; then
+	. "$script" "$dir" || \
+		die "$0: error while loading xilinx environment"
+else
+	. "$script" "$dir" > /dev/null || \
+		die "$0: error while loading xilinx environment"
+fi
+
+prog="`basename "$0"`"
+
+export XI_WRAPPER_RECURSIVE=1
+
+hook_dir="$prefix/share/xi-wrapper/hooks.d"
+hook_file="$hook_dir/$prog-$version-pre-exec.sh"
+if [ -r "$hook_file" ] ; then
+	. "$hook_file" || die "$0: error when sourcing hook file '$hook_file'"
+fi
+
+if [ "$XI_WRAPPER_FILTERED" == 1 ] && should_filter "$prog" ; then
+	filter_prog=awk
+	filter_expr='
+		BEGIN {
+			prevout = 0 ;
+			out = 0 ;
+		}
+		/^(ERROR|WARNING|INFO)/ {
+			out = 1 ;
+		}
+		/^   [^ ]/ {
+			if (prevout == 1)
+				out = 1 ;
+			else
+				out = 0 ;
+		}
+		{
+			if (out != 0)
+				print ;
+			prevout = out ;
+			out = 0 ;
+		}'
+	"$prog" "$@" | "$filter_prog" "$filter_expr"
+	ret="${PIPESTATUS[0]}"
+else
+	if [ "$prog" = "xi-wrapper" ] ; then
+		"${SHELL:-/bin/sh}" "$@"
+		ret="$?"
+	else
+		"$prog" "$@"
+		ret="$?"
+	fi
+fi
+
+hook_file="$hook_dir/$prog-$version-post-exec.sh"
+if [ -r "$hook_file" ] ; then
+	. "$hook_file" || die "$0: error when sourcing hook file '$hook_file'"
+fi
+
+exit "$ret"
