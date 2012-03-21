@@ -1,5 +1,5 @@
 XI wrapper
-==================
+==========
 
 A wrapper script for Xilinx ISE[1].
 
@@ -21,21 +21,21 @@ The Makefile supports the usual GNU standard variables. It must
 be installed in the same base directory as Xilinx ISE, since it
 expects to find the different versions of ISE installed under
 $prefix/$XILINX_VERSION. If you have e.g. ISE 12.4 installed in
-/opt/xilinx/12.4 . To install the wrapper scripts, you would do:
+/opt/xilinx/12.4. To install the wrapper scripts, you would do:
 
 $ make prefix=/opt/xilinx sysconfdir=/etc
 
 # make prefix=/opt/xilinx sysconfdir=/etc install
 
-This will also create symbolic links for the really basic tools used
-in a FPGA design flow. You probably need more symbolic links for you
-design flow.  Perhaps symbolic links for more commands should be installed
+This will also create symbolic links for the really basic tools used in
+a FPGA design flow. You probably need more symbolic links for your own
+design flow. Perhaps symbolic links for more commands should be installed
 by default?
 
 Adding support for more commands found in the Xilinx ISE installation
 is easy.  Simply create a symbolic link, named the same as the command
 found in Xilinx' bin directory, to this wrapper script. The wrapper can
-either be used standalone or in conjunction with Environment Modules.
+either be used standalone or in conjunction with Environment Modules[2].
 
 
 Usage
@@ -51,7 +51,7 @@ symbolic link named xst to xi-wrapper.
 $ ln -s $bindir/xi-wrapper xst
 
 You can now easily change both which version of xst is invoked, if you
-have multiple installs in parallel, or which architecture build of the
+have multiple installs in parallel, and which architecture build of the
 tool is used (64- or 32-bit).
 
 Invoke a specific version:
@@ -61,6 +61,11 @@ $ XI_WRAPPER_VERSION="12.1" xst
 Use 32-bit synthesis tool on 64-bit machine:
 
 $ XI_WRAPPER_ARCH="i686" xst
+
+As a special feature, if xi-wrapper is invoked as xi-wrapper, is will
+setup the Xilinx environment and execute $SHELL. This means you can easily
+invoke commands using the shell without having to make a symbolic link
+for them.
 
 
 Hooks
@@ -92,7 +97,7 @@ work or when using parallel cable, the usb-driver modulefile together
 with usb-driver[3] can be used instead.
 
 E.g. if you have /etc/modulefiles setup as a modulefile directory. You
-can create the folder /etc/modulefiles/xi-wrapper and put usb-driver
+can create the folder /etc/modulefiles/xi-wrapper and put the usb-driver
 and libusb modulefiles in there. This lets you access the two setups as
 different versions of the xi-wrapper module.
 
