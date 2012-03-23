@@ -72,19 +72,29 @@ Hooks
 -----
 
 In certain versions, some of the tools behave erratically. E.g. in version
-13.2 trce tends to segfault after finishing STA. The report is fine,
-since STA was done before segfault, but make fails since exit code is
-139. To work around this, a system for inserting pre- and post-execution
-hooks is implemented. E.g. to work around the bug mentioned, create
-$datadir/xi-wrapper/hooks.d/trce-13.2-post-exec.sh containing
+13.2 trce tends to segmentation fault after finishing STA. The report is
+fine, since STA was done before the segmentation fault, but make fails
+since exit code is 139. To work around this, a system for inserting pre-
+and post-execution hooks is implemented. E.g. to work around the bug
+mentioned, create $datadir/xi-wrapper/hooks.d/trce-13.2-post-exec.sh
+containing
 
 	if [ $ret -eq 139 ] ; then
 		ret=0
 	fi
 
-The naming rules for the hooks are $tool-$version-pre-exec.sh for
-pre-execution hooks, and $tool-$version-post-exec.sh for post-execution
-hooks.
+The naming rules for the hooks are $tool-$version-$type.sh. Where $tool
+is the name of the invoked command, $version is the Xilinx ISE installation
+version, and $type can be one of the following:
+
+pre-xienv	Hooks executed before the Xilinx environment is loaded.
+post-xienv	Hooks executed after the Xilinx environment is loaded.
+pre-exec	Hooks executed before the command is invoked.
+post-exec	Hooks executed after the command is invsoked.
+
+The $type values are listed in the order they are executed. A special
+$tool value 'all' also exists. This special value is executed for all
+possible values of $tool invoked.
 
 
 Environment Modules

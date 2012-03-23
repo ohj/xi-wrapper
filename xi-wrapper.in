@@ -32,6 +32,13 @@ die()
 should_filter()
 {
 	local ret=1
+	local prog="$1"
+
+	if [ "$#" -ne 1 ] ; then
+		echo "usage: $0 <prog>" 1>&2
+		die "$0: error: missing argument"
+	fi
+
 	case "$prog" in
 	map)
 		ret=0 ;;
@@ -50,17 +57,58 @@ should_filter()
 	return "$ret"
 }
 
+source_hook()
+{
+	local hook_file="$hook_dir/$1-$2.sh"
+	if [ "$#" -ne 2 ] ; then
+		echo "usage: $0 <tool-name> <hook-name>"
+		die "$0: error: missing argument"
+	fi
+	if [ -f "$hook_file" -a -x "$hook_file" ] ; then
+		. "$hook_file" || \
+			die "$0: error when sourcing '$2' hook file '$hook_file'"
+	fi
+}
+
 if [ -n "$XI_WRAPPER_RECURSIVE" ] ; then
 	die "$0: error: recursive loop detected"
 fi
 
-if [ -n "$XI_WRAPPER_PREFIX" ] ; then
-	prefix="$XI_WRAPPER_PREFIX"
-else
+prog="`basename "$0"`"
+
+if [ -z "$XI_WRAPPER_PREFIX" ] ; then
 	# Change this to where you installed ISE. E.g.
 	# prefix="/opt/xilinx"
 	prefix="@prefix@"
+else
+	prefix="$XI_WRAPPER_PREFIX"
 fi
+
+if [ ! -d "$prefix" ] ; then
+	die "$0: error: '$prefix' does not seem to be a valid prefix"
+fi
+
+if [ -z "$XI_WRAPPER_BINDIR" ] ; then
+	bindir="@bindir@"
+else
+	bindir="$XI_WRAPPER_BINDIR"
+fi
+
+if [ ! -d "$bindir" ] ; then
+	die "$0: error: '$bindir' does not seem to be a valid bindir"
+fi
+
+if [ -z "$XI_WRAPPER_DATADIR" ] ; then
+	datadir="@datadir@"
+else
+	datadir="$XI_WRAPPER_DATADIR"
+fi
+
+if [ ! -d "$datadir" ] ; then
+	die "$0: error: '$datadir' does not seem to be a valid datadir"
+fi
+
+hook_dir="$datadir/xi-wrapper/hooks.d"
 
 if [ -n "$XI_WRAPPER_VERSION" ] ; then
 	version="$XI_WRAPPER_VERSION"
@@ -103,48 +151,59 @@ if [ -n "$XI_WRAPPER_LD_PRELOAD" ] ; then
 	export LD_PRELOAD
 fi
 
+source_hook "all" pre-xienv
+source_hook "all-$version" pre-xienv
+source_hook "$prog-$version" pre-xienv
+
+#save_ld_library_path="$LD_LIBRARY_PATH"
 dir="$prefix/$version/ISE_DS"
 script="$dir/settings$bits.sh"
-if [ "$XI_WRAPPER_VERBOSE" == 1 ] ; then
+if [ "$XI_WRAPPER_VERBOSE" = 1 ] ; then
 	. "$script" "$dir" || \
 		die "$0: error while loading xilinx environment"
 else
 	. "$script" "$dir" > /dev/null || \
 		die "$0: error while loading xilinx environment"
 fi
+#export LD_LIBRARY_PATH="$save_ld_library_path"
 
-prog="`basename "$0"`"
+source_hook "$prog-$version" post-xienv
+source_hook "all-$version" pre-xienv
+source_hook "all" pre-xienv
 
 export XI_WRAPPER_RECURSIVE=1
+# For debugging mostly
+#export PATH="`echo "$PATH"|sed -e "s:$bindir::g"|tr -s ':'`"
 
-hook_dir="$prefix/share/xi-wrapper/hooks.d"
-hook_file="$hook_dir/$prog-$version-pre-exec.sh"
-if [ -r "$hook_file" ] ; then
-	. "$hook_file" || die "$0: error when sourcing hook file '$hook_file'"
-fi
-
-if [ "$XI_WRAPPER_FILTERED" == 1 ] && should_filter "$prog" ; then
-	filter_prog=awk
-	filter_expr='
-		BEGIN {
-			prevout = 0 ;
-			out = 0 ;
-		}
-		/^(ERROR|WARNING|INFO)/ {
+should_filter "$prog"
+filter_cond="$?"
+filter_prog=awk
+filter_expr='
+	BEGIN {
+		prevout = 0 ;
+		out = 0 ;
+	}
+	/^(ERROR|WARNING|INFO)/ {
+		out = 1 ;
+	}
+	/^   [^ ]/ {
+		if (prevout == 1)
 			out = 1 ;
-		}
-		/^   [^ ]/ {
-			if (prevout == 1)
-				out = 1 ;
-			else
-				out = 0 ;
-		}
-		{
-			if (out != 0)
-				print ;
-			prevout = out ;
+		else
 			out = 0 ;
-		}'
+	}
+	{
+		if (out != 0)
+			print ;
+		prevout = out ;
+		out = 0 ;
+	}'
+
+source_hook "all" pre-exec
+source_hook "all-$version" pre-exec
+source_hook "$prog-$version" pre-exec
+
+if [ "$XI_WRAPPER_FILTERED" = 1 -a "$filter_cond" = 0 ] ; then
 	"$prog" "$@" | "$filter_prog" "$filter_expr"
 	ret="${PIPESTATUS[0]}"
 else
@@ -157,9 +216,8 @@ else
 	fi
 fi
 
-hook_file="$hook_dir/$prog-$version-post-exec.sh"
-if [ -r "$hook_file" ] ; then
-	. "$hook_file" || die "$0: error when sourcing hook file '$hook_file'"
-fi
+source_hook "$prog-$version" post-exec
+source_hook "all-$version" post-exec
+source_hook "all" post-exec
 
 exit "$ret"
