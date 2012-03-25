@@ -1,6 +1,5 @@
 # Makefile for xi-wrapper
 
-XILINX_VERSION = 12.4
 VERSION = 1
 REVISION = 
 
@@ -51,7 +50,6 @@ SYMLINKS = \
 
 SUBST_VARS = $(QUIET)echo 'GEN     $@' ; \
 	sed \
-		-e 's:@xi_wrapper_version@:$(XILINX_VERSION):g' \
 		-e 's:@bindir@:$(bindir):g' \
 		-e 's:@datadir@:$(datadir):g' \
 		-e 's:@datarootdir@:$(datarootdir):g' \

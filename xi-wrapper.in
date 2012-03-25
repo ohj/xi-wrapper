@@ -110,12 +110,12 @@ fi
 
 hook_dir="$datadir/xi-wrapper/hooks.d"
 
-if [ -n "$XI_WRAPPER_VERSION" ] ; then
-	version="$XI_WRAPPER_VERSION"
-else
-	# version of ISE installed. E.g. 9.1i
-	version="@xi_wrapper_version@"
+if [ -z "$XI_WRAPPER_VERSION" ] ; then
+	die -e "$prog: error: environment variable XI_WRAPPER_VERSION is unset,\n" \
+		"    please set it to the version of ISE to use."
 fi
+
+version="$XI_WRAPPER_VERSION"
 
 if [ ! -d "$prefix/$version" ] ; then
 	die "$prog: error: '$prefix/$version' does not seem to be a valid version"
