@@ -23,6 +23,8 @@
 # $XI_WRAPPER_PREFIX/$XI_WRAPPER_VERSION/ISE_DS/ISE/sysgen/util
 # $XI_WRAPPER_PREFIX/$XI_WRAPPER_VERSION/ISE_DS/EDK/bin/lin64
 
+prog="`basename "$0"`"
+
 die()
 {
 	echo "$@" >&2
@@ -36,7 +38,7 @@ should_filter()
 
 	if [ "$#" -ne 1 ] ; then
 		echo "usage: $0 <prog>" 1>&2
-		die "$0: error: missing argument"
+		die "$prog: error: missing argument to function '$0'"
 	fi
 
 	case "$prog" in
@@ -62,19 +64,17 @@ source_hook()
 	local hook_file="$hook_dir/$1-$2.sh"
 	if [ "$#" -ne 2 ] ; then
 		echo "usage: $0 <tool-name> <hook-name>"
-		die "$0: error: missing argument"
+		die "$prog: error: missing argument to function '$0'"
 	fi
 	if [ -f "$hook_file" -a -x "$hook_file" ] ; then
 		. "$hook_file" || \
-			die "$0: error when sourcing '$2' hook file '$hook_file'"
+			die "$prog: error when sourcing '$2' hook file '$hook_file'"
 	fi
 }
 
 if [ -n "$XI_WRAPPER_RECURSIVE" ] ; then
-	die "$0: error: recursive loop detected"
+	die "$prog: error: recursive loop detected"
 fi
-
-prog="`basename "$0"`"
 
 if [ -z "$XI_WRAPPER_PREFIX" ] ; then
 	# Change this to where you installed ISE. E.g.
@@ -85,7 +85,7 @@ else
 fi
 
 if [ ! -d "$prefix" ] ; then
-	die "$0: error: '$prefix' does not seem to be a valid prefix"
+	die "$prog: error: '$prefix' does not seem to be a valid prefix"
 fi
 
 if [ -z "$XI_WRAPPER_BINDIR" ] ; then
@@ -95,7 +95,7 @@ else
 fi
 
 if [ ! -d "$bindir" ] ; then
-	die "$0: error: '$bindir' does not seem to be a valid bindir"
+	die "$prog: error: '$bindir' does not seem to be a valid bindir"
 fi
 
 if [ -z "$XI_WRAPPER_DATADIR" ] ; then
@@ -105,7 +105,7 @@ else
 fi
 
 if [ ! -d "$datadir" ] ; then
-	die "$0: error: '$datadir' does not seem to be a valid datadir"
+	die "$prog: error: '$datadir' does not seem to be a valid datadir"
 fi
 
 hook_dir="$datadir/xi-wrapper/hooks.d"
@@ -118,7 +118,7 @@ else
 fi
 
 if [ ! -d "$prefix/$version" ] ; then
-	die "$0: error: '$prefix/$version' does not seem to be a valid version"
+	die "$prog: error: '$prefix/$version' does not seem to be a valid version"
 fi
 
 if [ -n "$XI_WRAPPER_ARCH" ] ; then
@@ -132,7 +132,7 @@ if [ "$arch" = "x86_64" ] ; then
 elif echo "$arch" | grep -q '^i[3456]86$' ; then
 	bits="32"
 else
-	die "$0: error: unknown architecture '$arch' not supported"
+	die "$prog: error: unknown architecture '$arch' not supported"
 fi
 
 if [ -z "$LD_LIBRARY_PATH" ] ; then
@@ -160,10 +160,10 @@ dir="$prefix/$version/ISE_DS"
 script="$dir/settings$bits.sh"
 if [ "$XI_WRAPPER_VERBOSE" = 1 ] ; then
 	. "$script" "$dir" || \
-		die "$0: error while loading xilinx environment"
+		die "$prog: error while loading Xilinx environment"
 else
 	. "$script" "$dir" > /dev/null || \
-		die "$0: error while loading xilinx environment"
+		die "$prog: error while loading Xilinx environment"
 fi
 #export LD_LIBRARY_PATH="$save_ld_library_path"
 
