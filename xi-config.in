@@ -34,10 +34,17 @@ die()
 usage()
 {
 	cat >&2 << EOF
-usage: $prog <language> <libraries...>
+usage: $prog [options] [--] <libraries...>
 
-Legal languages are:
-  verilog
+      --format=fmt              Format of command line. Default is iverilog.
+  -h, --help                    Show this help message.
+      --include                 Output include directories.
+      --lib                     Output library directories.
+
+Legal formats are:
+  isim
+  iverilog
+  verilator
 
 Legal libraries are:
   XilinxCoreLib
@@ -66,41 +73,106 @@ if [ ! -d "$prefix/$version" ] ; then
 	die "$prog: error: '$prefix/$version' does not seem to be a valid version"
 fi
 
-if [ "$#" -lt 1 ] ; then
-	usage
-	echo "" >&2
-	die "$prog: error: you must atleast specify a language"
-fi
+opt_lib=0
+opt_include=0
+opt_format="iverilog"
 
-language="$1"
-shift
+while [ $# -gt 0 ] ; do
+	case "$1" in
+	--help|-h)
+		usage
+		exit 0
+		;;
+	--format=*)
+		opt_format=${1:9}
+		;;
+	--lib)
+		opt_lib=1
+		;;
+	--include)
+		opt_include=1
+		;;
+	--)
+		shift
+		break
+		;;
+	-*)
+		die "$prog: error: unknown option '$1'"
+		;;
+	*)
+		break
+		;;
+	esac
+	shift
+done
+
+case "$opt_format" in
+isim)
+	libopt="-sourcelibdir "
+	extopt="-sourcelibext .v"
+	includeopt="-include "
+	;;
+iverilog)
+	libopt="-y"
+	extopt=""
+	includeopt="-I"
+	;;
+verilator)
+	libopt="-y"
+	extopt=""
+	includeopt="+incdir+"
+	;;
+*)
+	die "$prog: error: illegal format '$opt_format'"
+	;;
+esac
 
 output=""
+if [ -n "$extopt" ] ;
+	output="$extopt"
+fi
+
 while [ $# -gt 0 ] ; do
 	arg="$1"
 	shift
 	case "$arg" in
 	XilinxCoreLib)
+		lib="$prefix/$version/ISE_DS/ISE/verilog/src/$arg"
+		include=""
 		;;
 	unisims)
+		lib="$prefix/$version/ISE_DS/ISE/verilog/src/$arg"
+		include=""
 		;;
 	unimacro)
+		lib="$prefix/$version/ISE_DS/ISE/verilog/src/$arg"
+		include=""
 		;;
 	simprims)
+		lib="$prefix/$version/ISE_DS/ISE/verilog/src/$arg"
+		include=""
 		;;
 	*)
 		die "$prog: error: unknown library '$arg'"
 		;;
 	esac
-	lib="$prefix/$version/ISE_DS/ISE/$language/src/$arg"
-	if [ -d "$lib" ] ; then
+	if [ "$opt_lib" -eq 1 -a -n "$lib" ] ; then
 		if [ -n "$output" ] ; then
-			output="$output -y$lib"
+			output="$output $libopt$lib"
 		else
-			output="-y$lib"
+			output="$libopt$lib"
+		fi
+	fi
+
+	if [ "$opt_include" -eq 1 -a -n "$include" ] ; then
+		if [ -n "$output" ] ; then
+			output="$output $includeopt$include"
+		else
+			output="$includeopt$include"
 		fi
 	fi
 done
+
 
 if [ -n "$output" ] ; then
 	echo "$output"
