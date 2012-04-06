@@ -90,7 +90,7 @@ version, and $type can be one of the following:
 pre-xienv	Hooks executed before the Xilinx environment is loaded.
 post-xienv	Hooks executed after the Xilinx environment is loaded.
 pre-exec	Hooks executed before the command is invoked.
-post-exec	Hooks executed after the command is invsoked.
+post-exec	Hooks executed after the command is invoked.
 
 The $type values are listed in the order they are executed. A special
 $tool value 'all' also exists. This special value is executed for all
@@ -112,6 +112,23 @@ and libusb modulefiles in there. This lets you access the two setups as
 different versions of the xi-wrapper module.
 
 
+Filtering
+---------
+
+The scripts also supports filtering standard output of the command
+invoked, and only having INFO, WARNING, and ERROR messages printed. This
+makes it easier to use the tool in a build environment like GNU make[4],
+without standard output being overloaded with output.
+
+The filtering is activated by exporting the environment variable
+XI_WRAPPER_FILTERED set to '1'. Filtering is only activated for
+commands that are known to produce output that is compatible with the
+AWK filter. The filtering can be overridden by pre-exec hooks, by setting
+the filter_cond variable to '1' or '0', to turn filtering off or on for
+the command, respectively.
+
+
 [1] http://www.xilinx.com/products/design-tools/
 [2] http://modules.sourceforge.net/
 [3] http://rmdir.de/~michael/xilinx/
+[4] https://www.gnu.org/software/make/
