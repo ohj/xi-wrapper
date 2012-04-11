@@ -151,8 +151,12 @@ if [ -n "$XI_WRAPPER_LD_PRELOAD" ] ; then
 	export LD_PRELOAD
 fi
 
+declare -a prog_cmd
+prog_cmd[0]="$prog"
+
 source_hook "all" pre-xienv
 source_hook "all-$version" pre-xienv
+source_hook "$prog" pre-xienv
 source_hook "$prog-$version" pre-xienv
 
 #save_ld_library_path="$LD_LIBRARY_PATH"
@@ -168,6 +172,7 @@ fi
 #export LD_LIBRARY_PATH="$save_ld_library_path"
 
 source_hook "$prog-$version" post-xienv
+source_hook "$prog" post-xienv
 source_hook "all-$version" pre-xienv
 source_hook "all" pre-xienv
 
@@ -201,22 +206,24 @@ filter_expr='
 
 source_hook "all" pre-exec
 source_hook "all-$version" pre-exec
+source_hook "$prog" pre-exec
 source_hook "$prog-$version" pre-exec
 
 if [ "$XI_WRAPPER_FILTERED" = 1 -a "$filter_cond" = 0 ] ; then
-	"$prog" "$@" | "$filter_prog" "$filter_expr"
+	"${prog_cmd[@]}" "$@" | "$filter_prog" "$filter_expr"
 	ret="${PIPESTATUS[0]}"
 else
 	if [ "$prog" = "xi-wrapper" ] ; then
 		"${SHELL:-/bin/sh}" "$@"
 		ret="$?"
 	else
-		"$prog" "$@"
+		"${prog_cmd[@]}" "$@"
 		ret="$?"
 	fi
 fi
 
 source_hook "$prog-$version" post-exec
+source_hook "$prog" post-exec
 source_hook "all-$version" post-exec
 source_hook "all" post-exec
 
