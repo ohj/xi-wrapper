@@ -118,7 +118,7 @@ iverilog)
 	includeopt="-I"
 	;;
 verilator)
-	libopt="-y"
+	libopt="-y "
 	extopt=""
 	includeopt="+incdir+"
 	;;
@@ -128,7 +128,7 @@ verilator)
 esac
 
 output=""
-if [ -n "$extopt" ] ;
+if [ -n "$extopt" ] ; then
 	output="$extopt"
 fi
 
